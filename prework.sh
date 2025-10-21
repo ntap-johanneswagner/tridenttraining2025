@@ -39,7 +39,12 @@ echo "##########################################################################
 echo
 
 kubectl patch torc trident --type=merge -p '{"spec":{"wipeout":["crds"],"uninstall":true}}'
-sleep 30s
+frames="/ | \\ -"
+while [ $(kubectl get crd | grep trident | wc | awk '{print $1}') != 1 ];do
+        for frame in $frames; do
+                sleep 0.5; printf "\rWaiting for Trident to be removed $frame"
+        done
+done
 helm uninstall trident -n trident
 kubectl delete ns trident
 
