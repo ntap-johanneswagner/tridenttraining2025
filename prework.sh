@@ -53,6 +53,11 @@ while [ $(kubectl get pods -n trident | wc | awk '{print $1}') != 0 ];do
         done
 done
 kubectl delete ns trident
+helm repo remove netapp-trident
+kubectl delete sc storage-class-iscsi
+kubectl delete sc storage-class-nfs
+kubectl delete sc storage-class-smb
+kubectl delete sc storage-class-nvme
 
 echo
 echo "#######################################################################################################"
@@ -190,3 +195,15 @@ else
   echo "# Mongo 3.2 already in the Private Repo - nothing to do"
   echo "##############################################################"
 fi
+
+echo
+echo "#######################################################################################################"
+echo "# 6. CREATE LABSVM"
+echo "#######################################################################################################"
+echo
+
+mkdir -p /etc/ansible
+if [ -f /etc/ansible/hosts ]; then mv /etc/ansible/hosts /etc/ansible/hosts.bak; fi;
+cp hosts /etc/ansible/ 
+
+ansible-playbook labsvm.yaml
