@@ -46,6 +46,12 @@ while [ $(kubectl get crd | grep trident | wc | awk '{print $1}') != 1 ];do
         done
 done
 helm uninstall trident -n trident
+frames="/ | \\ -"
+while [ $(kubectl get pods -n trident | wc | awk '{print $1}') != 0 ];do
+        for frame in $frames; do
+                sleep 0.5; printf "\rWaiting for Trident to be removed $frame"
+        done
+done
 kubectl delete ns trident
 
 echo
