@@ -100,6 +100,7 @@ Edit the secret-svm.yaml file and fill in user and password (Hint for getting th
 After you edited all the files, apply them to your k8s cluster:
 
 ```console
+kubectl apply -f secret-svm.yaml
 kubectl apply -f backend-ontap-nas.yaml
 kubectl apply -f backend-ontap-nas-eco.yaml
 kubectl apply -f backend-ontap-san.yaml
