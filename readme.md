@@ -209,7 +209,7 @@ kubectl get pods,pvc -n sanapp
 kubectl get pods,pvc -n sanecoapp
 ```
 
-If there are errors, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
+If there are errors or things stuck in pending, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
 
 Also let's try out whether we really can write data and read it again:
 
@@ -352,6 +352,8 @@ tridentctl-protect create appvault OntapS3 ontap-vault -s s3-creds --bucket s3lo
 Verify the creation:
 ```console
 tridentctl-protect get appvault -n trident-protect
+```
+```console
 +--------------+----------+-----------+------+-------+
 |     NAME     | PROVIDER |   STATE   | AGE  | ERROR |
 +--------------+----------+-----------+------+-------+
@@ -418,6 +420,7 @@ Let's create a snapshot:
 ```console
 tridentctl-protect create snapshot nasappsnap --app nasapp --appvault ontap-vault -n nasapp
 ```
+```console
 We can list now the Snapshot
 ```console
 tridentctl-protect get snap -n nasapp
