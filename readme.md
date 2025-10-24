@@ -113,10 +113,15 @@ The output should look like this:
 
 ```console
 kubectl get tbc -n trident
-TO DOOOOOO
+‌kubectl get tbc -n trident
+NAME                        BACKEND NAME   BACKEND UUID                           PHASE   STATUS
+backend-ontap-nas           nas            1e4ff09a-b0ce-4709-8797-908139addd3f   Bound   Success
+backend-ontap-nas-economy   nas-economy    ecccd445-93dd-4c0b-a8c3-8e7955654620   Bound   Success
+backend-ontap-san           san            6a5068b5-24f1-4bc0-8376-babc438425ba   Bound   Success
+backend-ontap-san-economy   san-economy    5eb0274f-ffe6-460e-a83b-54a87f29c9b1   Bound   Success
 ```
 
-If everything is bound, all good. If the status is different to bound, inspect it via *kubectl describe tbc `<tbcname>`-n trident* find the errors and fix them. 
+If everything is bound, all good. If the status is different to bound, inspect it via *kubectl describe tbc `<tbcname>` -n `<trident-namespace>`* find the errors and fix them. 
 
 ### StorageClass
 
@@ -135,14 +140,19 @@ Have a quick look at them, this time there is no need for edits, and apply them:
 kubectl apply -f sc-nas.yaml
 kubectl apply -f sc-nas-eco.yaml
 kubectl apply -f sc-san.yaml
-kubectl apply -f Sc-san-eco.yaml 
+kubectl apply -f sc-san-eco.yaml 
 ```
 
 Check the status with *kubectl get sc*
 
 ```console
 kubectl get sc
-TO DOOOOOO
+
+NAME               PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+sc-nas (default)   csi.trident.netapp.io   Delete          Immediate           true                   29s
+sc-nas-eco         csi.trident.netapp.io   Delete          Immediate           true                   29s
+sc-san             csi.trident.netapp.io   Delete          Immediate           true                   29s
+sc-san-eco         csi.trident.netapp.io   Delete          Immediate           true                   10s
 ```
 
 ### VolumeSnapshotClass
@@ -190,8 +200,41 @@ It's quiet important to understand that even if Trident creates Volumes successf
 There are 5 files in the folder. One will create a pod that has 4 PVCs, one for each storage class. The others have only one covering one sc. 
 
 Apply them and have a look whether all works or if something fails. 
+Helpful commands for this might be:
+
+```console
+kubectl get namespace
+kubectl get pods,pvc -n <namespace>
+```
 
 If there are errors, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
+
+Also let's try out whether we really can write data and read it again:
+
+```console
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
+
+kubectl exec -n nasapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
+kubectl exec -n nasecoapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
+kubectl exec -n sanapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
+kubectl exec -n sanecoapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
+
+```
+
+
+```console
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /nas/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /naseco/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /san/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /saneco/test.txt
+kubectl exec -n nasapp $(kubectl get pod -n busybox -o name) -- more /nas/test.txt
+kubectl exec -n nasecoapp $(kubectl get pod -n busybox -o name) -- more /naseco/test.txt
+kubectl exec -n sanapp $(kubectl get pod -n busybox -o name) -- more /san/test.txt
+kubectl exec -n sanecoapp $(kubectl get pod -n busybox -o name) -- more /saneco/test.txt
+```
 
 ## :trident: Scenario 04 - Backup anyone? Installation of Trident protect
 **Remember: All required files are in the folder */root/tridenttraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
