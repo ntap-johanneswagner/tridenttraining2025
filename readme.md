@@ -336,8 +336,8 @@ Secret Key: SthzvJ1S_QY4N3ng_r5n2L8hPA4tdCVtPc6D14gx
 
 Now that you know where to retrieve those keys, let's create variables that we will use a few times:  
 ```bash
-BUCKETKEY=EO1XP61T31I8EDGUZ1PM
-BUCKETSECRET=SthzvJ1S_QY4N3ng_r5n2L8hPA4tdCVtPc6D14gx
+BUCKETKEY=<youraccesskey>
+BUCKETSECRET=<yoursecretkey>
 ```
 Creating an AppVault requires a secret where the keys are stored:  
 ```bash
@@ -345,8 +345,11 @@ kubectl create secret generic -n trident-protect s3-creds --from-literal=accessK
 ```
 You can now proceed with the AppVault creation & validation (_on both Kubernetes clusters_):  
 ```bash
-$ tridentctl protect create appvault OntapS3 ontap-vault -s s3-creds --bucket s3lod --endpoint 192.168.0.230 --skip-cert-validation --no-tls -n trident-protect
-$ tridentctl protect get appvault -n trident-protect
+tridentctl-protect create appvault OntapS3 ontap-vault -s s3-creds --bucket s3lod --endpoint 192.168.0.230 --skip-cert-validation --no-tls -n trident-protect
+```
+Verify the creation:
+```bash
+tridentctl-protect get appvault -n trident-protect
 +--------------+----------+-----------+------+-------+
 |     NAME     | PROVIDER |   STATE   | AGE  | ERROR |
 +--------------+----------+-----------+------+-------+
