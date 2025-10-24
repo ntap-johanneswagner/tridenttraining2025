@@ -75,6 +75,7 @@ echo "# 5. CACHING IMAGES"
 echo "#######################################################################################################"
 echo
 
+kubectl create ns trident
 kubectl create secret docker-registry regcred --docker-username=registryuser --docker-password=Netapp1! -n trident --docker-server=registry.demo.netapp.com
 
 TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | jq -r .token)
