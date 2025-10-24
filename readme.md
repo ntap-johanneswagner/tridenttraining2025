@@ -421,10 +421,11 @@ Let's create a snapshot:
 tridentctl-protect create snapshot nasappsnap --app nasapp --appvault ontap-vault -n nasapp
 ```
 
-We can list now the Snapshot
+We can list now the Snapshot  
+
 ```console
 tridentctl-protect get snap -n nasapp
-‌```
+```
 
 ```console
 +------------+--------+----------------+-----------+-------+-----+
@@ -432,7 +433,7 @@ tridentctl-protect get snap -n nasapp
 +------------+--------+----------------+-----------+-------+-----+
 | nasappsnap | nasapp | Delete         | Completed |       | 10s |
 +------------+--------+----------------+-----------+-------+-----+
-‌```
+```
 
 As our app has 1 PVC, you should find 1 Volume Snapshots:  
 ```console
