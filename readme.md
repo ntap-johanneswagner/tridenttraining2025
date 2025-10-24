@@ -271,7 +271,7 @@ trident-protect-controller-manager-6454f4776f-6ls7v            2/2     Running  
 
 Trident Protect CR can be configured with YAML manifests or CLI.  
 Let's install its CLI which avoids making mistakes when creating the YAML files:  
-```bash
+```console
 cd
 curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/25.06.0/tridentctl-protect-linux-amd64
 chmod +x tridentctl-protect
@@ -288,7 +288,7 @@ EOT
 ```
 
 The CLI will appear as a new sub-menu in the _tridentctl_ tool.  
-```bash
+```console
 tridentctl-protect version
 25.06.0
 ```
@@ -317,7 +317,7 @@ ok: [localhost] => {
 }
 ```
 If you don't have this file at hand, you can connect to ONTAP in cli and retrieve the keys in advanced mode:  
-```bash
+```console
 cluster1::> set -priv advanced
 
 cluster1::*> vserver object-store-server user show -vserver svm_s3
@@ -335,20 +335,20 @@ Secret Key: SthzvJ1S_QY4N3ng_r5n2L8hPA4tdCVtPc6D14gx
 ```
 
 Now that you know where to retrieve those keys, let's create variables that we will use a few times:  
-```bash
+```console
 BUCKETKEY=<youraccesskey>
 BUCKETSECRET=<yoursecretkey>
 ```
 Creating an AppVault requires a secret where the keys are stored:  
-```bash
+```console
 kubectl create secret generic -n trident-protect s3-creds --from-literal=accessKeyID=$BUCKETKEY --from-literal=secretAccessKey=$BUCKETSECRET
 ```
 You can now proceed with the AppVault creation & validation (_on both Kubernetes clusters_):  
-```bash
+```console
 tridentctl-protect create appvault OntapS3 ontap-vault -s s3-creds --bucket s3lod --endpoint 192.168.0.230 --skip-cert-validation --no-tls -n trident-protect
 ```
 Verify the creation:
-```bash
+```console
 tridentctl-protect get appvault -n trident-protect
 +--------------+----------+-----------+------+-------+
 |     NAME     | PROVIDER |   STATE   | AGE  | ERROR |
@@ -360,7 +360,7 @@ If the bucket is listed as _available_, then the process was successful.
 
 You can also install a S3 browser, which can be quite useful.  
 I tend to often use the one provided by AWS, which can be quite handy:  
-```bash
+```console
 cd
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip -q awscliv2.zip
@@ -376,7 +376,7 @@ EOF
 ```
 
 2 commands that could be useful to list the content of the bucket:  
-```bash
+```console
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --summarize
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --recursive --summarize
 ```
@@ -390,18 +390,126 @@ To keep it simple, we will work with tridentctl-protect in this scenario.
 
 The first step is to tell Trident protect what is our application. We will use the example app we used to adress all four storageclasses.
 
-```bash
+```console
 tridentctl-protect create app allstoragclasses --namespaces 'allstorageclasses(app=busybox)' -n allstorageclasses
 ```
 You can verify the status with the following command:
-```bash
+```console
 tridentctl-protect get app -n allstorageclasses
 ```
 If everything is successfull it should look like this:
+```console
+‌+------------------+-------------------+-------+-----+
+|       NAME       |    NAMESPACES     | STATE | AGE |
++------------------+-------------------+-------+-----+
+| allstoragclasses | allstorageclasses | Ready | 6s  |
++------------------+-------------------+-------+-----+
+```
+Creating an app snapshot consists in 2 steps:  
+- create a CSI snapshot per PVC  
+- copy the app metadata in the AppVault  
+This is potentially done in conjunction with _hooks_ in order to interact with the app. This part is not covered in this chapter.  
 
-+------+---------------+-------+-----+
-| NAME |  NAMESPACES   | STATE | AGE |
-+------+---------------+-------+-----+
-| bbox | allstoragclasses | Ready | 13s |
-+------+---------------+-------+-----+
+Let's create a snapshot:  
+```console
+tridentctl-protect create snapshot alscsnap --app allstorageclasses --appvault ontap-vault -n allstorageclasses
+```
+We can list now the Snapshot
+```console
+tridentctl-protect get snap -n tpsc05busybox
++-----------+------+----------------+-----------+-------+-----+
+|   NAME    | APP  | RECLAIM POLICY |   STATE   | ERROR | AGE |
++-----------+------+----------------+-----------+-------+-----+
+| bboxsnap1 | bbox | Delete         | Completed |       | 11s |
++-----------+------+----------------+-----------+-------+-----+
+```
+
+As our app has 2 PVC, you should find 2 Volume Snapshots:  
+```console
+$ kubectl get vs
+NAME                                                                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+snapshot-fe8ccc56-35a1-4d4d-9105-d0c7e40fb960-pvc-1de7ac03-98cf-4e28-9ccb-a0c7e814c3bb   true         mydata1                             352Ki         csi-snap-class   snapcontent-acf567df-25c9-46ca-9acf-56c852b17b2e   16m            16m
+snapshot-fe8ccc56-35a1-4d4d-9105-d0c7e40fb960-pvc-83750f7e-0d88-4e98-aaee-9e50a8a76a4a   true         mydata2                             352Ki         csi-snap-class   snapcontent-6dc3c7af-1083-440d-9691-08d1fb9b3139   16m            16m
+```
+
+Browsing through the bucket, you will also find the content of the snapshot (the metadata):  
+```console
+$ SNAPPATH=$(kubectl get snapshot bboxsnap1 -o=jsonpath='{.status.appArchivePath}')
+$ aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$SNAPPATH --recursive  
+2025-06-05 12:59:54       1231 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/application.json
+2025-06-05 12:59:54          3 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/exec_hooks.json
+2025-06-05 13:00:05       2547 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/post_snapshot_execHooksRun.json
+2025-06-05 13:00:00       2570 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/pre_snapshot_execHooksRun.json
+2025-06-05 12:59:54       2517 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup.json
+2025-06-05 12:59:57      13085 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup.tar.gz
+2025-06-05 12:59:57       6467 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup_summary.json
+2025-06-05 13:00:05       4643 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/snapshot.json
+2025-06-05 13:00:05        682 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshot_classes.json
+2025-06-05 13:00:05       3756 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshot_contents.json
+2025-06-05 13:00:05       4450 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshots.json
+```
+
+## C. Backup Creation  
+
+Creating an app backup consists in several steps:  
+- create an application snapshot if none is specified in the procedure  
+- copy the app metadata to the AppVault  
+- copy the PVC data to the AppVault
+This is also potentially done in conjunction with _hooks_ in order to interact with the app. This part is not covered in this chapter.  
+The duration of the backup process takes a bit more time compared to the snapshot, as data is also copied to the bucket.  
+```console
+$ tridentctl protect create backup bboxbkp1 --app bbox --snapshot bboxsnap1 --appvault ontap-vault  -n tpsc05busybox
+Backup "bboxbkp1" created.
+
+$ tridentctl protect get backup -n tpsc05busybox
++----------+------+----------------+-----------+-------+-------+
+|   NAME   | APP  | RECLAIM POLICY |   STATE   | ERROR |  AGE  |
++----------+------+----------------+-----------+-------+-------+
+| bboxbkp1 | bbox | Retain         | Completed |       | 1m39s |
++----------+------+----------------+-----------+-------+-------+
+```
+If you check the bucket, you will see more subfolders appear:  
+```console
+$ APPPATH=$(echo $SNAPPATH | awk -F '/' '{print $1}')
+$ aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$APPPATH/
+                           PRE backups/
+                           PRE kopia/
+                           PRE snapshots/
+```
+The *backups* folder contains the app metadata, while the *kopia* one contains the data.  
+
+## D. Scheduling  
+
+Creating a schedule to automatically take snapshots & backups can also be done with the cli.  
+Update frequencies can be chosen between _hourly_, _daily_, _weekly_ & _monthly_.  
+For this lab, in order to witness scheduled snapshots & backups, it is probably better to move to a faster frequency, done with _custom_ granularity.  
+This this example, let's switch to YAML:  
+```console
+$ cat << EOF | kubectl apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: Schedule
+metadata:
+  name: bbox-sched1
+  namespace: tpsc05busybox
+spec:
+  appVaultRef: ontap-vault
+  applicationRef: bbox
+  backupRetention: "3"
+  dataMover: Kopia
+  enabled: true
+  granularity: Custom
+  recurrenceRule: |-
+    DTSTART:20250106T000100Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  snapshotRetention: "3"
+EOF
+schedule.protect.trident.netapp.io/bbox-sched1 created
+
+$ tridentctl protect get schedule -n tpsc05busybox
++-------------+------+--------------------------------+---------+-------+-------+-----+
+|    NAME     | APP  |            SCHEDULE            | ENABLED | STATE | ERROR | AGE |
++-------------+------+--------------------------------+---------+-------+-------+-----+
+| bbox-sched1 | bbox | DTSTART:20241209T000100Z       | true    |       |       | 28s |
+|             |      | RRULE:FREQ=MINUTELY;INTERVAL=5 |         |       |       |     |
++-------------+------+--------------------------------+---------+-------+-------+-----+
 ```
