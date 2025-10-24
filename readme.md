@@ -387,7 +387,7 @@ Note: As mentioned above, Trident protect CRs can be configured as yaml manifest
 [General Workflows, cli extension](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Introducing-tridentctl-protect-the-powerful-CLI-for-Trident-protect/ba-p/456494)
 
 To keep it simple, we will work with tridentctl-protect in this scenario. 
-
+## A. App creation 
 The first step is to tell Trident protect what is our application. We will use the example app we used for testing the ontap-nas driver.
 
 ```console
@@ -405,6 +405,8 @@ If everything is successfull it should look like this:
 | nasapp | nasapp     | Ready | 9s  |
 +--------+------------+-------+-----+
 ```
+
+## B. Snapshot creation  
 Creating an app snapshot consists in 2 steps:  
 - create a CSI snapshot per PVC  
 - copy the app metadata in the AppVault  
@@ -441,10 +443,20 @@ SNAPPATH=$(kubectl get snapshot nasappsnap -n nasapp -o=jsonpath='{.status.appAr
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$SNAPPATH --recursive  
 ```
 ```console
-Todo
+2025-10-24 14:51:22       1310 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/application.json
+2025-10-24 14:51:22          3 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/exec_hooks.json
+2025-10-24 14:51:30       2545 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/post_snapshot_execHooksRun.json
+2025-10-24 14:51:28       2568 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/pre_snapshot_execHooksRun.json
+2025-10-24 14:51:22       2515 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/resource_backup.json
+2025-10-24 14:51:26       7127 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/resource_backup.tar.gz
+2025-10-24 14:51:26       4122 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/resource_backup_summary.json
+2025-10-24 14:51:30       4654 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/snapshot.json
+2025-10-24 14:51:30       1074 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/volume_snapshot_classes.json
+2025-10-24 14:51:30       1870 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/volume_snapshot_contents.json
+2025-10-24 14:51:30       2220 nasapp_1adc96ae-be9f-41fb-9aee-4a50eba2a5ed/snapshots/20251024145122_nasappsnap_32120d0a-3772-4cf9-88a5-3fe126883d15/volume_snapshots.json
 ```
 
-## C. Backup Creation  
+## C. Backup creation  
 
 Creating an app backup consists in several steps:  
 - create an application snapshot if none is specified in the procedure  
@@ -457,7 +469,11 @@ tridentctl-protect create backup nasappbkp1 --app nasapp --snapshot nasappsnap -
 tridentctl-protect get backup -n nasapp
 ```
 ```console
-TODO
++------------+--------+----------------+-----------+-------+-------+
+|    NAME    |  APP   | RECLAIM POLICY |   STATE   | ERROR |  AGE  |
++------------+--------+----------------+-----------+-------+-------+
+| nasappbkp1 | nasapp | Retain         | Completed |       | 2m12s |
++------------+--------+----------------+-----------+-------+-------+
 ```
 If you check the bucket, you will see more subfolders appear:  
 ```console
@@ -465,7 +481,10 @@ APPPATH=$(echo $SNAPPATH | awk -F '/' '{print $1}')
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$APPPATH/
 ```
 ```console
-ToDo
+
+                           PRE backups/
+                           PRE kopia/
+                           PRE snapshots/
 ```
 The *backups* folder contains the app metadata, while the *kopia* one contains the data.  
 
@@ -494,8 +513,78 @@ spec:
     RRULE:FREQ=MINUTELY;INTERVAL=5
   snapshotRetention: "3"
 EOF
-tridentctl protect get schedule -n tpsc05busybox
+tridentctl-protect get schedule -n nasapp
+```
+```console
++--------------+--------+--------------------------------+---------+-------+-------+-----+
+|     NAME     |  APP   |            SCHEDULE            | ENABLED | STATE | ERROR | AGE |
++--------------+--------+--------------------------------+---------+-------+-------+-----+
+| nasapp-sched | nasapp | DTSTART:20250106T000100Z       | true    |       |       | 41s |
+|              |        | RRULE:FREQ=MINUTELY;INTERVAL=5 |         |       |       |     |
++--------------+--------+--------------------------------+---------+-------+-------+-----+
+```
+## :trident: Scenario 07 - Restoring an application
+
+When restoring applications with Trident Protect, you can achieve the following:
+- Restore from a snapshot  
+-- in-place or to a new namespace  
+-- full or partial  
+- Restore from a backup
+-- in-place or to a new namespace  
+-- on the same Kubernetes cluster or a different one  
+-- full or partial  
+
+Let's dig into some of those possibilities:  
+## A. In-place partial snapshot restore  
+
+Let's first delete the content of one of the volume mounted on the pod (_nas_).  
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- rm -f /nas/test.txt
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- ls /nas/
+```
+```console
+tridentctl-protect create sir nasappsir1 --snapshot nasapp/nasappsnap --resource-filter-include='[{"labelSelectors":["volume=volnas"]}]' -n nasapp
+tridentctl-protect get sir -n nasappsir; kubectl -n nasapp get pod,pvc
+```
+# check result
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- ls /nas/
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
+```
+
+## B. In-place restore of a backup 
+
+For this test, let's first delete the DEPLOY & the 2 PVC from the namespace:  
+```console
+kubectl delete -n nasapp deploy busybox
+kubectl delete -n nasapp pvc --all
+```
+=> "Ohlalalalalala, I deleted my whole app! what can I do?!"  
+
+Easy answer, you restore everything from a backup!  
+
+Let's see that in action:  
+```console
+tridentctl-protect create bir nasappbir -n nasapp --backup nasapp/nasappbkp1
+```
+```console
+tridentctl protect get bir -n nasapp
 ```
 ```console
 TODO
 ```
+```console
+$ kubectl -n nasapp get po,pvc
+```
+```console
+TODO
+```
+Our app is back, but what about the data:  
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
+```
+```console
+TODO
+```
+
+
