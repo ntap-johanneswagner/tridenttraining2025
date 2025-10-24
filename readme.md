@@ -540,12 +540,30 @@ Let's dig into some of those possibilities:
 Let's first delete the content of one of the volume mounted on the pod (_nas_).  
 ```console
 kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- rm -f /nas/test.txt
-kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- ls /nas/
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
 ```
 ```console
 tridentctl-protect create sir nasappsir1 --snapshot nasapp/nasappsnap --resource-filter-include='[{"labelSelectors":["volume=volnas"]}]' -n nasapp
-tridentctl-protect get sir -n nasappsir; kubectl -n nasapp get pod,pvc
 ```
+The process will take some moment, you can check for the progress with the following commands. You will see that the pvc and the pod will disappear as we are going to restore them. 
+```console
+tridentctl-protect get sir -n nasapp; kubectl -n nasapp get pod,pvc
+```
+If everything was successful you should see an output, similar to this:
+
+```console
++------------+-------------+-----------+-------+-------+
+|    NAME    |  APPVAULT   |   STATE   | ERROR |  AGE  |
++------------+-------------+-----------+-------+-------+
+| nasappsir1 | ontap-vault | Completed |       | 1m31s |
++------------+-------------+-----------+-------+-------+
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/busybox-6db6b5964-qwhv2   1/1     Running   0          25s
+
+NAME                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/pvcnas   Bound    pvc-667f2e5a-77d5-4b67-bb55-ea3efa6749e1   1Gi        RWO            sc-nas         <unset>                 28s
+```
+
 # check result
 ```console
 kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- ls /nas/
@@ -568,23 +586,38 @@ Let's see that in action:
 tridentctl-protect create bir nasappbir -n nasapp --backup nasapp/nasappbkp1
 ```
 ```console
-tridentctl protect get bir -n nasapp
+tridentctl-protect get bir -n nasapp
+```
+This again will take some time.
+```console
++-----------+-------------+---------+-------+-----+
+|   NAME    |  APPVAULT   |  STATE  | ERROR | AGE |
++-----------+-------------+---------+-------+-----+
+| nasappbir | ontap-vault | Running |       | 13s |
++-----------+-------------+---------+-------+-----+
+```
+
+As soon as the state changes to Completed, you should be able to see the ressources we've delete again
+
+```console
+kubectl -n nasapp get po,pvc
 ```
 ```console
-TODO
-```
-```console
-$ kubectl -n nasapp get po,pvc
-```
-```console
-TODO
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/busybox-6db6b5964-dtd79   1/1     Running   0          87s
+
+NAME                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/pvcnas   Bound    pvc-b0d2d2b0-ba94-4016-88fb-e482818d6697   1Gi        RWO            sc-nas         <unset>                 88s
 ```
 Our app is back, but what about the data:  
 ```console
 kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
 ```
 ```console
-TODO
+Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!
 ```
+:trident::trident::trident:  
+Success! Congratulations to you, if you read this lines you are at the end of this small lab. If you went through all the tasks, you were able to install and configure Trident and Trident protect, run your first app, protect, destroy and recreate it.  
+:trident::trident::trident:
 
 
