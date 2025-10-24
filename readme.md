@@ -212,28 +212,27 @@ If there are errors, the first you should do is to have a look by using kubectl 
 Also let's try out whether we really can write data and read it again:
 
 ```console
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
-
-kubectl exec -n nasapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
-kubectl exec -n nasecoapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
-kubectl exec -n sanapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
-kubectl exec -n sanecoapp $(kubectl get pod -n busybox -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas driver!" > /nas/test.txt'
+kubectl exec -n nasecoapp $(kubectl get pod -n nasecoapp -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-nas-economy driver!" > /naseco/test.txt'
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san driver!" > /san/test.txt'
+kubectl exec -n sanecoapp $(kubectl get pod -n sanecoapp -o name) -- sh -c 'echo "Hello little Container! Trident will care about your persistent Data that is written to a pvc utilizing the ontap-san-economy driver!" > /saneco/test.txt'
 
 ```
 
 
 ```console
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /nas/test.txt
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /naseco/test.txt
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /san/test.txt
-kubectl exec -n allstorageclasses $(kubectl get pod -n busybox -o name) -- more /saneco/test.txt
-kubectl exec -n nasapp $(kubectl get pod -n busybox -o name) -- more /nas/test.txt
-kubectl exec -n nasecoapp $(kubectl get pod -n busybox -o name) -- more /naseco/test.txt
-kubectl exec -n sanapp $(kubectl get pod -n busybox -o name) -- more /san/test.txt
-kubectl exec -n sanecoapp $(kubectl get pod -n busybox -o name) -- more /saneco/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- more /nas/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- more /naseco/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- more /san/test.txt
+kubectl exec -n allstorageclasses $(kubectl get pod -n allstorageclasses -o name) -- more /saneco/test.txt
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
+kubectl exec -n nasecoapp $(kubectl get pod -n nasecoapp -o name) -- more /naseco/test.txt
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- more /san/test.txt
+kubectl exec -n sanecoapp $(kubectl get pod -n sanecoapp -o name) -- more /saneco/test.txt
 ```
 
 ## :trident: Scenario 04 - Backup anyone? Installation of Trident protect
