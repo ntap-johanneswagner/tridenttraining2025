@@ -270,9 +270,18 @@ if [[ $(skopeo list-tags docker://registry.demo.netapp.com/kube-rbac-proxy 2> /d
   skopeo copy docker://docker.io/kubebuilder/kube-rbac-proxy:v0.16.0 docker://registry.demo.netapp.com/kubebuilder/kube-rbac-proxy:v0.16.0
 fi
 
+echo "#######################################################################################################"
+echo "6. INSTALL ANSIBLE"
+echo "#######################################################################################################"
+
+dnf install -y python-pip
+pip install ansible-core==2.15.12 netapp-lib
+ansible-galaxy collection install netapp.ontap --ignore-certs
+
+
 echo
 echo "#######################################################################################################"
-echo "# 6. CREATE LABSVM"
+echo "# 7. CREATE LABSVM"
 echo "#######################################################################################################"
 echo
 
@@ -283,8 +292,6 @@ cp hosts /etc/ansible/
 ansible-playbook labsvm.yaml
 
 echo "#################################################################"
-echo "#"
-echo "# S3 SVM & Bucket Creation"
-echo "#"
+echo "# 8. S3 SVM & Bucket Creation"
 echo "#################################################################"
 ansible-playbook svm_S3_setup.yaml

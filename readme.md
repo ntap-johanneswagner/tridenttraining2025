@@ -13,11 +13,10 @@ Access the host *rhel3* via putty and clone this github repo
 git clone https://github.com/ntap-johanneswagner/tridenttraining2025
 ```
 
-After that, jump into the directory, modify the access of the prework script and run it. This script will prepare the lab for our excercises.
+After that, jump into the directory, and run the prework script This script will prepare the lab for our excercises.
 
 ```console
 cd tridenttraining2025
-chmod 777 prework.sh
 ./prework.sh
 ```
 
