@@ -380,3 +380,28 @@ EOF
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --summarize
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --recursive --summarize
 ```
+## :trident: Scenario 06 - Protecting an application
+
+Note: As mentioned above, Trident protect CRs can be configured as yaml manifests or via tridentctl-protect. I recommend to have a look at these two blog articles where the typical procedures are shown utilizing both ways.  
+[General Workflows, yaml manifests](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Kubernetes-driven-data-management-The-new-era-with-Trident-protect/ba-p/456395)  
+[General Workflows, cli extension](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Introducing-tridentctl-protect-the-powerful-CLI-for-Trident-protect/ba-p/456494)
+
+To keep it simple, we will work with tridentctl-protect in this scenario. 
+
+The first step is to tell Trident protect what is our application. We will use the example app we used to adress all four storageclasses.
+
+```bash
+tridentctl-protect create app allstoragclasses --namespaces 'allstorageclasses(app=busybox)' -n allstorageclasses
+```
+You can verify the status with the following command:
+```bash
+tridentctl-protect get app -n allstorageclasses
+```
+If everything is successfull it should look like this:
+
++------+---------------+-------+-----+
+| NAME |  NAMESPACES   | STATE | AGE |
++------+---------------+-------+-----+
+| bbox | allstoragclasses | Ready | 13s |
++------+---------------+-------+-----+
+```
