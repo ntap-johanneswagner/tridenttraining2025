@@ -295,4 +295,6 @@ ansible-playbook labsvm.yaml
 echo "#################################################################"
 echo "# 8. S3 SVM & Bucket Creation"
 echo "#################################################################"
-ansible-playbook svm_S3_setup.yaml
+ansible-playbook svm_S3_setup.yaml > ansible_S3_SVM_result.txt
+
+

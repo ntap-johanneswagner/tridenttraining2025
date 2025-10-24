@@ -16,7 +16,7 @@ git clone https://github.com/ntap-johanneswagner/tridenttraining2025
 After that, jump into the directory, and run the prework script This script will prepare the lab for our excercises.
 
 ```console
-cd tridenttraining2025
+cd /root/tridenttraining2025/
 ./prework.sh
 ```
 
@@ -58,21 +58,24 @@ kubectl get pods -n <trident-namespace>
 
 If everything is successfull you should see one controller pod and one node pod per kubernetes node.
 
-As our cluster has 3 nodes, the output should look like this:
+As our cluster has 3 linux and 2 windows nodes, the output should look like this:
 ```console
 k get pods -n trident
-NAME                                  READY   STATUS    RESTARTS   AGE
-trident-controller-7cd95c9bf5-s5jpw   6/6     Running   0          107s
-trident-node-linux-5v2cq              2/2     Running   0          107s
-trident-node-linux-pc692              2/2     Running   0          107s
-trident-node-linux-qnfg5              2/2     Running   0          107s
-trident-operator-674cdcdbd5-bg2fx     1/1     Running   0          2m48s
+
+NAME                                 READY   STATUS    RESTARTS   AGE
+trident-controller-5c6c9856d-jd8qc   6/6     Running   0          3m25s
+trident-node-linux-6r5h8             2/2     Running   0          3m24s
+trident-node-linux-cjkqq             2/2     Running   0          3m24s
+trident-node-linux-th7mx             2/2     Running   0          3m24s
+trident-node-windows-8cfzg           3/3     Running   0          3m23s
+trident-node-windows-nlfqs           3/3     Running   0          3m23s
+trident-operator-77f4f5f7f5-4wfb6    1/1     Running   0          4m14s
 ```
 
 ## :trident: Scenario 02 - Configure Trident
-**Remember: All required files are in the folder */home/user/tridenttraining2025/scenario02* please ensure that you are in this folder now. You can do this with the command** 
+**Remember: All required files are in the folder */root/tridenttraining2025/scenario02* please ensure that you are in this folder now. You can do this with the command** 
 ```console
-cd /home/user/tridenttraining2025/scenario02
+cd /root/tridenttraining2025/scenario02
 ```
 Installation is quiet easy and straight forward, the fun begins with the configuration. 
 
@@ -176,9 +179,9 @@ kubectl apply -f volumesnapshotclass.yaml
 ```
 
 ## :trident: Scenario 03 - Testing Trident with the first applications
-**Remember: All required files are in the folder */home/user/tridenttraining2025/scenario03* please ensure that you are in this folder now. You can do this with the command** 
+**Remember: All required files are in the folder */root/tridenttraining2025/scenario03* please ensure that you are in this folder now. You can do this with the command** 
 ```console
-cd /home/user/tridenttraining2025/scenario03
+cd /root/tridenttraining2025/scenario03
 ```
 
 It's quiet important to understand that even if Trident creates Volumes successful and you can see the PVC/PV objects created in K8s, there is still a ton of things that can go wrong. To verfiy that installation and configuration is successful, it's important to run some kind of test application to verify that also the worker nodes were correctly prepared. 
@@ -190,7 +193,10 @@ Apply them and have a look whether all works or if something fails.
 If there are errors, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
 
 ## :trident: Scenario 04 - Backup anyone? Installation of Trident protect
-**Remember: All required files are in the folder */home/user/tridenttraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
+**Remember: All required files are in the folder */root/tridenttraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
+```console
+cd /root/tridenttraining2025/scenario04
+```
 
 As K8s based applications become more and more important, people ask the mean questions around backup, dr and so on.
 
