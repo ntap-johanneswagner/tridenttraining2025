@@ -388,22 +388,18 @@ Note: As mentioned above, Trident protect CRs can be configured as yaml manifest
 
 To keep it simple, we will work with tridentctl-protect in this scenario. 
 
-The first step is to tell Trident protect what is our application. We will use the example app we used to adress all four storageclasses.
+The first step is to tell Trident protect what is our application. We will use the example app we used for testing the ontap-nas driver.
 
 ```console
-tridentctl-protect create app allstoragclasses --namespaces 'allstorageclasses(app=busybox)' -n allstorageclasses
+tridentctl-protect create app nasapp --namespaces 'nasapp(app=busybox)' -n nasapp
 ```
 You can verify the status with the following command:
 ```console
-tridentctl-protect get app -n allstorageclasses
+tridentctl-protect get app -n nasapp
 ```
 If everything is successfull it should look like this:
 ```console
-‌+------------------+-------------------+-------+-----+
-|       NAME       |    NAMESPACES     | STATE | AGE |
-+------------------+-------------------+-------+-----+
-| allstoragclasses | allstorageclasses | Ready | 6s  |
-+------------------+-------------------+-------+-----+
+TODO
 ```
 Creating an app snapshot consists in 2 steps:  
 - create a CSI snapshot per PVC  
@@ -412,41 +408,27 @@ This is potentially done in conjunction with _hooks_ in order to interact with t
 
 Let's create a snapshot:  
 ```console
-tridentctl-protect create snapshot alscsnap --app allstorageclasses --appvault ontap-vault -n allstorageclasses
+tridentctl-protect create snapshot nasappsnap --app nasapp --appvault ontap-vault -n nasapp
 ```
 We can list now the Snapshot
 ```console
-tridentctl-protect get snap -n tpsc05busybox
-+-----------+------+----------------+-----------+-------+-----+
-|   NAME    | APP  | RECLAIM POLICY |   STATE   | ERROR | AGE |
-+-----------+------+----------------+-----------+-------+-----+
-| bboxsnap1 | bbox | Delete         | Completed |       | 11s |
-+-----------+------+----------------+-----------+-------+-----+
+tridentctl-protect get snap -n nasapp
+ToDo
 ```
 
-As our app has 2 PVC, you should find 2 Volume Snapshots:  
+As our app has 1 PVC, you should find 1 Volume Snapshots:  
 ```console
 $ kubectl get vs
-NAME                                                                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
-snapshot-fe8ccc56-35a1-4d4d-9105-d0c7e40fb960-pvc-1de7ac03-98cf-4e28-9ccb-a0c7e814c3bb   true         mydata1                             352Ki         csi-snap-class   snapcontent-acf567df-25c9-46ca-9acf-56c852b17b2e   16m            16m
-snapshot-fe8ccc56-35a1-4d4d-9105-d0c7e40fb960-pvc-83750f7e-0d88-4e98-aaee-9e50a8a76a4a   true         mydata2                             352Ki         csi-snap-class   snapcontent-6dc3c7af-1083-440d-9691-08d1fb9b3139   16m            16m
+TODO
 ```
 
 Browsing through the bucket, you will also find the content of the snapshot (the metadata):  
 ```console
-$ SNAPPATH=$(kubectl get snapshot bboxsnap1 -o=jsonpath='{.status.appArchivePath}')
-$ aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$SNAPPATH --recursive  
-2025-06-05 12:59:54       1231 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/application.json
-2025-06-05 12:59:54          3 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/exec_hooks.json
-2025-06-05 13:00:05       2547 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/post_snapshot_execHooksRun.json
-2025-06-05 13:00:00       2570 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/pre_snapshot_execHooksRun.json
-2025-06-05 12:59:54       2517 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup.json
-2025-06-05 12:59:57      13085 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup.tar.gz
-2025-06-05 12:59:57       6467 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/resource_backup_summary.json
-2025-06-05 13:00:05       4643 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/snapshot.json
-2025-06-05 13:00:05        682 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshot_classes.json
-2025-06-05 13:00:05       3756 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshot_contents.json
-2025-06-05 13:00:05       4450 bbox_cf26244e-ecfc-42ef-8ece-3a47908f42f6/snapshots/20250605125955_bboxsnap1_fe8ccc56-35a1-4d4d-9105-d0c7e40fb960/volume_snapshots.json
+SNAPPATH=$(kubectl get snapshot nasappsnap -o=jsonpath='{.status.appArchivePath}')
+aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$SNAPPATH --recursive  
+```
+```console
+Todo
 ```
 
 ## C. Backup Creation  
@@ -458,23 +440,19 @@ Creating an app backup consists in several steps:
 This is also potentially done in conjunction with _hooks_ in order to interact with the app. This part is not covered in this chapter.  
 The duration of the backup process takes a bit more time compared to the snapshot, as data is also copied to the bucket.  
 ```console
-$ tridentctl protect create backup bboxbkp1 --app bbox --snapshot bboxsnap1 --appvault ontap-vault  -n tpsc05busybox
-Backup "bboxbkp1" created.
-
-$ tridentctl protect get backup -n tpsc05busybox
-+----------+------+----------------+-----------+-------+-------+
-|   NAME   | APP  | RECLAIM POLICY |   STATE   | ERROR |  AGE  |
-+----------+------+----------------+-----------+-------+-------+
-| bboxbkp1 | bbox | Retain         | Completed |       | 1m39s |
-+----------+------+----------------+-----------+-------+-------+
+tridentctl-protect create backup nasappbkp1 --app nasapp --snapshot nasappsnap --appvault ontap-vault  -n nasapp
+tridentctl-protect get backup -n nasapp
+```
+```console
+TODO
 ```
 If you check the bucket, you will see more subfolders appear:  
 ```console
-$ APPPATH=$(echo $SNAPPATH | awk -F '/' '{print $1}')
-$ aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$APPPATH/
-                           PRE backups/
-                           PRE kopia/
-                           PRE snapshots/
+APPPATH=$(echo $SNAPPATH | awk -F '/' '{print $1}')
+aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$APPPATH/
+```
+```console
+ToDo
 ```
 The *backups* folder contains the app metadata, while the *kopia* one contains the data.  
 
@@ -485,15 +463,15 @@ Update frequencies can be chosen between _hourly_, _daily_, _weekly_ & _monthly_
 For this lab, in order to witness scheduled snapshots & backups, it is probably better to move to a faster frequency, done with _custom_ granularity.  
 This this example, let's switch to YAML:  
 ```console
-$ cat << EOF | kubectl apply -f -
+cat << EOF | kubectl apply -f -
 apiVersion: protect.trident.netapp.io/v1
 kind: Schedule
 metadata:
-  name: bbox-sched1
-  namespace: tpsc05busybox
+  name: nasapp-sched
+  namespace: nasapp
 spec:
   appVaultRef: ontap-vault
-  applicationRef: bbox
+  applicationRef: nasapp
   backupRetention: "3"
   dataMover: Kopia
   enabled: true
@@ -503,13 +481,8 @@ spec:
     RRULE:FREQ=MINUTELY;INTERVAL=5
   snapshotRetention: "3"
 EOF
-schedule.protect.trident.netapp.io/bbox-sched1 created
-
-$ tridentctl protect get schedule -n tpsc05busybox
-+-------------+------+--------------------------------+---------+-------+-------+-----+
-|    NAME     | APP  |            SCHEDULE            | ENABLED | STATE | ERROR | AGE |
-+-------------+------+--------------------------------+---------+-------+-------+-----+
-| bbox-sched1 | bbox | DTSTART:20241209T000100Z       | true    |       |       | 28s |
-|             |      | RRULE:FREQ=MINUTELY;INTERVAL=5 |         |       |       |     |
-+-------------+------+--------------------------------+---------+-------+-------+-----+
+tridentctl protect get schedule -n tpsc05busybox
+```
+```console
+TODO
 ```
