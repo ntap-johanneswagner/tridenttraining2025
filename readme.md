@@ -425,6 +425,7 @@ We can list now the Snapshot
 ```console
 tridentctl-protect get snap -n nasapp
 ‌```
+
 ```console
 +------------+--------+----------------+-----------+-------+-----+
 |    NAME    |  APP   | RECLAIM POLICY |   STATE   | ERROR | AGE |
