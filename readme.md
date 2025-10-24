@@ -3,7 +3,7 @@
 For this Hands-on Workshop, we are going to use Lab on Demand. Please enroll yourself the following Lab:
 https://labondemand.netapp.com/node/878
 
-First a big thank you to [Yves Weisser](github.com/yvosonthehub) as his LabNetApp repository is the foundation of this training material.
+First a big thank you to [Yves Weisser](github.com/yvosonthehub) as his LabNetApp repository is the foundation of this training material. I highly recommend to have look at his work and redo this from time to time as he is doing a tremendous job, explaining all the Trident functionalities with real good examples. 
 
 **The Lab guide is only needed for getting the usernames and passwords. Please ignore the tasks in the lab guide, everything you need is in this github repository.**
 
@@ -168,3 +168,16 @@ This base is needed for every CSI-driver that needs CSI-snapshots the next what 
 ```console
 kubectl apply -f volumesnapshotclass.yaml
 ```
+
+## :trident: Scenario 03 - Testing Trident with the first applications
+**Remember: All required files are in the folder */home/user/tridenttraining2025/scenario03* please ensure that you are in this folder now. You can do this with the command** 
+```console
+cd /home/user/tridenttraining2025/scenario03
+```
+
+It's quiet important to understand that even if Trident creates Volumes successful and you can see the PVC/PV objects created in K8s, there is still a ton of things that can go wrong. To verfiy that installation and configuration is successful, it's important to run some kind of test application to verify that also the worker nodes were correctly prepared. 
+
+There are 5 files in the folder. One will create a pod that has 4 PVCs, one for each storage class. The others have only one covering one sc. 
+
+Apply them and have a look whether all works or if something fails. 
+
