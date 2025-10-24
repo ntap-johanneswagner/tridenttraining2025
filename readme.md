@@ -200,11 +200,13 @@ It's quiet important to understand that even if Trident creates Volumes successf
 There are 5 files in the folder. One will create a pod that has 4 PVCs, one for each storage class. The others have only one covering one sc. 
 
 Apply them and have a look whether all works or if something fails. 
-Helpful commands for this might be:
 
 ```console
-kubectl get namespace
-kubectl get pods,pvc -n <namespace>
+kubectl get pods,pvc -n allstorageclasses
+kubectl get pods,pvc -n nasapp
+kubectl get pods,pvc -n nasecoapp
+kubectl get pods,pvc -n sanapp
+kubectl get pods,pvc -n sanecoapp
 ```
 
 If there are errors, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
