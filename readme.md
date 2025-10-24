@@ -33,7 +33,8 @@ helm repo add netapp-trident https://netapp.github.io/trident-helm-chart
 ```
 
 After this, we can tell Helm to install the operator.  
-
+It's not unusual that customers don't allow to access public repositorys and have their own image registry. While we can access public registries in LoD, we have to fight with the Docker image pull rate limitation. Due to this, we are also working with a private registry, the necessary images are already cached there and the secret to access it is also created. 
+The default command to install trident without any customization like private registry is looking like this:
 ```console
 helm install <name> netapp-trident/trident-operator --version 100.2506.2 --create-namespace --namespace <trident-namespace>
 ```
@@ -44,7 +45,13 @@ helm install <name> netapp-trident/trident-operator --version 100.2506.2 --creat
 
 `<trident-namespace>`is the place where the operator and Trident will be deployed. Usually we also use "trident" here.
 
-As soon you fired the command above, the operator will start with the deployment. You can check this by discovering the pods in the namespace:
+As we want to use a private registry, we modify the command a little bit:
+
+```console
+helm install <name> netapp-trident/trident-operator --version 100.2506.2 --create-namespace --namespace <trident-namespace> --set tridentAutosupportImage=registry.demo.netapp.com/trident-autosupport:25.06.0,operatorImage=registry.demo.netapp.com/trident-operator:25.06.2,tridentImage=registry.demo.netapp.com/trident:25.06.2,tridentSilenceAutosupport=true,windows=true,imagePullSecrets[0]=regcred
+```
+
+As soon you fired the command above (ensure that you place the right release name and namespace name!), the operator will start with the deployment. You can check this by discovering the pods in the namespace:
 
 ```console
 kubectl get pods -n <trident-namespace>
@@ -181,3 +188,59 @@ There are 5 files in the folder. One will create a pod that has 4 PVCs, one for 
 
 Apply them and have a look whether all works or if something fails. 
 
+If there are errors, the first you should do is to have a look by using kubectl describe. Possible objects to start: Pod, PVC, trident controller.
+
+## :trident: Scenario 04 - Backup anyone? Installation of Trident protect
+**Remember: All required files are in the folder */home/user/tridenttraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
+
+As K8s based applications become more and more important, people ask the mean questions around backup, dr and so on.
+
+Since October 2024, Trident has a small add-on, called Trident protect. This little application is meant to do k8s native backup & DR.
+
+We do this again utilizing a private registry. To access it we need a secret again, lets creat this first:
+
+```console
+kubectl create ns trident-protect
+kubectl create secret docker-registry regcred --docker-username=registryuser --docker-password=Netapp1! -n trident-protect --docker-server=registry.demo.netapp.com
+```
+
+We are going to use parameters gathered in the trident_protect_helm_values.yaml file.
+Now we can add the helm repository and install trident protect:
+
+```console
+helm repo add netapp-trident-protect https://netapp.github.io/trident-protect-helm-chart/
+helm registry login registry.demo.netapp.com -u registryuser -p Netapp1!
+
+helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=lod1 --version 100.2506.0 --namespace trident-protect -f trident_protect_helm_values.yaml
+```
+
+After a very short time you should be able to see Trident protect being installed successfully. 
+```console
+kubectl get pods -n trident-protect
+NAME                                                           READY   STATUS    RESTARTS   AGE
+trident-protect-controller-manager-6454f4776f-6ls7v            2/2     Running   0          1h
+```
+
+Trident Protect CR can be configured with YAML manifests or CLI.  
+Let's install its CLI which avoids making mistakes when creating the YAML files:  
+```bash
+cd
+curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/25.06.0/tridentctl-protect-linux-amd64
+chmod +x tridentctl-protect
+mv ./tridentctl-protect /usr/local/bin
+
+curl -L -O https://github.com/NetApp/tridentctl-protect/releases/download/25.02.0/tridentctl-completion.bash
+mkdir -p ~/.bash/completions
+mv tridentctl-completion.bash ~/.bash/completions/
+source ~/.bash/completions/tridentctl-completion.bash
+
+cat <<EOT >> ~/.bashrc
+source ~/.bash/completions/tridentctl-completion.bash
+EOT
+```
+
+The CLI will appear as a new sub-menu in the _tridentctl_ tool.  
+```bash
+tridentctl-protect version
+25.06.0
+```

@@ -61,11 +61,13 @@ kubectl delete sc storage-class-nvme
 
 echo
 echo "#######################################################################################################"
-echo "# 4. ENABLE POD SCHEDULING ON THE CONTROL PLANE"
+echo "# 4. ENABLE POD SCHEDULING ON THE CONTROL PLANE, DISABLE WINDOWS"
 echo "#######################################################################################################"
 echo
 
 kubectl taint nodes rhel3 node-role.kubernetes.io/control-plane:NoSchedule-
+kubectl taint nodes win1 win=true:NoSchedule
+kubectl taint nodes win2 win=true:NoSchedule
 
 echo
 echo "#######################################################################################################"
@@ -73,6 +75,7 @@ echo "# 5. CACHING IMAGES"
 echo "#######################################################################################################"
 echo
 
+kubectl create secret docker-registry regcred --docker-username=registryuser --docker-password=Netapp1! -n trident --docker-server=registry.demo.netapp.com
 
 TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:ratelimitpreview/test:pull" | jq -r .token)
 RATEREMAINING=$(curl --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest 2>&1 | grep -i ratelimit-remaining | cut -d ':' -f 2 | cut -d ';' -f 1 | cut -b 1- | tr -d ' ')
@@ -102,12 +105,12 @@ if [[ $(dnf list installed  | grep skopeo | wc -l) -eq 0 ]]; then
 fi
 skopeo login registry.demo.netapp.com  -u registryuser -p Netapp1!
 
-if [[ $(skopeo list-tags docker://registry.demo.netapp.com/trident 2> /dev/null | grep 25.06.1 | wc -l) -eq 0 ]]; then
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/trident 2> /dev/null | grep 25.06.2 | wc -l) -eq 0 ]]; then
   echo
   echo "##############################################################"
   echo "# Skopeo Copy Multi-Arch TRIDENT Into Private Repo"
   echo "##############################################################"
-  skopeo copy --multi-arch all docker://docker.io/netapp/trident:25.06.1 docker://registry.demo.netapp.com/trident:25.06.1
+  skopeo copy --multi-arch all docker://docker.io/netapp/trident:25.06.2 docker://registry.demo.netapp.com/trident:25.06.2
 fi
 
 if [[ $(skopeo list-tags docker://registry.demo.netapp.com/trident-operator 2> /dev/null | grep 25.06.1 | wc -l) -eq 0 ]]; then
@@ -115,7 +118,7 @@ if [[ $(skopeo list-tags docker://registry.demo.netapp.com/trident-operator 2> /
   echo "##############################################################"
   echo "# Skopeo Copy TRIDENT OPERATOR Into Private Repo"
   echo "##############################################################"
-  skopeo copy docker://docker.io/netapp/trident-operator:25.06.1 docker://registry.demo.netapp.com/trident-operator:25.06.1
+  skopeo copy docker://docker.io/netapp/trident-operator:25.06.2 docker://registry.demo.netapp.com/trident-operator:25.06.2
 fi
 
 if [[ $(skopeo list-tags docker://registry.demo.netapp.com/trident-autosupport 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
@@ -195,6 +198,77 @@ else
   echo "# Mongo 3.2 already in the Private Repo - nothing to do"
   echo "##############################################################"
 fi
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/controller 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Trident Protect Controller Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/controller:25.06.0 docker://registry.demo.netapp.com/controller:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/exechook 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Trident Protect Exechook Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/exechook:25.06.0 docker://registry.demo.netapp.com/exechook:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/resourcebackup 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Trident Protect ResourceBackup Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/resourcebackup:25.06.0 docker://registry.demo.netapp.com/resourcebackup:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/resourcerestore 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Trident Protect ResourceRestore Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/resourcerestore:25.06.0 docker://registry.demo.netapp.com/resourcerestore:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/resourcedelete 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Trident Protect ResourceDelete Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/resourcedelete:25.06.0 docker://registry.demo.netapp.com/resourcedelete:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/restic 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Restic Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/restic:25.06.0 docker://registry.demo.netapp.com/restic:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/kopia 2> /dev/null | grep 25.06.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Kopia Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/netapp/kopia:25.06.0 docker://registry.demo.netapp.com/kopia:25.06.0
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/kubectl 2> /dev/null | grep 1.30.2 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Kubectl Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/bitnami/kubectl:1.30.2 docker://registry.demo.netapp.com/bitnami/kubectl:1.30.2
+fi
+
+if [[ $(skopeo list-tags docker://registry.demo.netapp.com/kube-rbac-proxy 2> /dev/null | grep 0.16.0 | wc -l) -eq 0 ]]; then
+  echo
+  echo "##############################################################"
+  echo "# Skopeo Copy Kube RBAC Proxy Into Private Repo"
+  echo "##############################################################"
+  skopeo copy docker://docker.io/kubebuilder/kube-rbac-proxy:v0.16.0 docker://registry.demo.netapp.com/kubebuilder/kube-rbac-proxy:v0.16.0
+fi
 
 echo
 echo "#######################################################################################################"
@@ -207,3 +281,10 @@ if [ -f /etc/ansible/hosts ]; then mv /etc/ansible/hosts /etc/ansible/hosts.bak;
 cp hosts /etc/ansible/ 
 
 ansible-playbook labsvm.yaml
+
+echo "#################################################################"
+echo "#"
+echo "# S3 SVM & Bucket Creation"
+echo "#"
+echo "#################################################################"
+ansible-playbook svm_S3_setup.yaml
