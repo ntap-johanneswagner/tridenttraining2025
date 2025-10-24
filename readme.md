@@ -420,7 +420,7 @@ Let's create a snapshot:
 ```console
 tridentctl-protect create snapshot nasappsnap --app nasapp --appvault ontap-vault -n nasapp
 ```
-```console
+
 We can list now the Snapshot
 ```console
 tridentctl-protect get snap -n nasapp
