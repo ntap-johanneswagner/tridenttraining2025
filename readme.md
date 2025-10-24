@@ -399,7 +399,11 @@ tridentctl-protect get app -n nasapp
 ```
 If everything is successfull it should look like this:
 ```console
-TODO
++--------+------------+-------+-----+
+|  NAME  | NAMESPACES | STATE | AGE |
++--------+------------+-------+-----+
+| nasapp | nasapp     | Ready | 9s  |
++--------+------------+-------+-----+
 ```
 Creating an app snapshot consists in 2 steps:  
 - create a CSI snapshot per PVC  
@@ -413,18 +417,27 @@ tridentctl-protect create snapshot nasappsnap --app nasapp --appvault ontap-vaul
 We can list now the Snapshot
 ```console
 tridentctl-protect get snap -n nasapp
-ToDo
-```
+‌```
+```console
++------------+--------+----------------+-----------+-------+-----+
+|    NAME    |  APP   | RECLAIM POLICY |   STATE   | ERROR | AGE |
++------------+--------+----------------+-----------+-------+-----+
+| nasappsnap | nasapp | Delete         | Completed |       | 10s |
++------------+--------+----------------+-----------+-------+-----+
+‌```
 
 As our app has 1 PVC, you should find 1 Volume Snapshots:  
 ```console
-$ kubectl get vs
-TODO
+kubectl get vs -n nasapp
+```
+```console
+‌NAME                                                                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS    SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+snapshot-32120d0a-3772-4cf9-88a5-3fe126883d15-pvc-667f2e5a-77d5-4b67-bb55-ea3efa6749e1   true         pvcnas                              304Ki         csi-snap-class   snapcontent-49668534-3a05-4218-8e84-94ee96a46482   79s            79s
 ```
 
 Browsing through the bucket, you will also find the content of the snapshot (the metadata):  
 ```console
-SNAPPATH=$(kubectl get snapshot nasappsnap -o=jsonpath='{.status.appArchivePath}')
+SNAPPATH=$(kubectl get snapshot nasappsnap -n nasapp -o=jsonpath='{.status.appArchivePath}')
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod/$SNAPPATH --recursive  
 ```
 ```console
