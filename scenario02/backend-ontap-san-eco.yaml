@@ -10,7 +10,5 @@ spec:
   storageDriverName: ontap-san-economy
   managementLIF: <ip of svm mgmt lif>
   useCHAP: true
-  defaults:
-    nameTemplate: "{{ .volume.Namespace }}_{{ .volume.RequestName }}_{{ .volume.Name }}"
   credentials:
     name: secret-svm
