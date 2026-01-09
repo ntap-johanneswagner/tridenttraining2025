@@ -486,7 +486,7 @@ Now we can add the helm repository and install trident protect:
 helm repo add netapp-trident-protect https://netapp.github.io/trident-protect-helm-chart/
 helm registry login registry.demo.netapp.com -u registryuser -p Netapp1!
 
-helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=lod1 --version 100.2506.0 --namespace trident-protect -f trident_protect_helm_values.yaml
+helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=lod1 --version 100.2510.0 --namespace trident-protect -f trident_protect_helm_values.yaml
 ```
 
 After a very short time you should be able to see Trident protect being installed successfully. 
@@ -500,7 +500,7 @@ Trident Protect CR can be configured with YAML manifests or CLI.
 Let's install its CLI which avoids making mistakes when creating the YAML files:  
 ```console
 cd
-curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/25.06.0/tridentctl-protect-linux-amd64
+curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/25.10.0/tridentctl-protect-linux-amd64
 chmod +x tridentctl-protect
 mv ./tridentctl-protect /usr/local/bin
 
