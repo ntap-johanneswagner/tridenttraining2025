@@ -35,19 +35,19 @@ After this, we can tell Helm to install the operator.
 It's not unusual that customers don't allow to access public repositorys and have their own image registry. While we can access public registries in LoD, we have to fight with the Docker image pull rate limitation. Due to this, we are also working with a private registry, the necessary images are already cached there and the secret to access it is also created. 
 The default command to install trident without any customization like private registry is looking like this:
 ```console
-helm install <name> netapp-trident/trident-operator --version 100.2506.2 --create-namespace --namespace <trident-namespace>
+helm install <name> netapp-trident/trident-operator --version 100.2510.0 --create-namespace --namespace <trident-namespace>
 ```
 
 `<name>` will be the name of our release, usually we just call it "trident"  
 
-`--version`defines the version of Trident. Unfortunately Helm requires semantic versioning, while Trident uses calendaric versioning. As a workaround we modified the version of the helmchart to be 100.`<YYMM>`.`<Patch>`. The June Release of 2025 with Patch 2 is 25.06.2, the Helm Chart Version is 100.2506.2  
+`--version`defines the version of Trident. Unfortunately Helm requires semantic versioning, while Trident uses calendaric versioning. As a workaround we modified the version of the helmchart to be 100.`<YYMM>`.`<Patch>`. The October Release of 2025 is 25.10.0, the Helm Chart Version is 100.2510.0  
 
 `<trident-namespace>`is the place where the operator and Trident will be deployed. Usually we also use "trident" here.
 
 As we want to use a private registry, we modify the command a little bit:
 
 ```console
-helm install <name> netapp-trident/trident-operator --version 100.2506.2 --create-namespace --namespace <trident-namespace> --set tridentAutosupportImage=registry.demo.netapp.com/trident-autosupport:25.06.0,operatorImage=registry.demo.netapp.com/trident-operator:25.06.2,tridentImage=registry.demo.netapp.com/trident:25.06.2,tridentSilenceAutosupport=true,windows=true,imagePullSecrets[0]=regcred
+helm install <name> netapp-trident/trident-operator --version 100.2510.0 --create-namespace --namespace <trident-namespace> --set tridentAutosupportImage=registry.demo.netapp.com/trident-autosupport:25.10.0,operatorImage=registry.demo.netapp.com/trident-operator:25.10.0,tridentImage=registry.demo.netapp.com/trident:25.10.0,tridentSilenceAutosupport=true,windows=true,imagePullSecrets[0]=regcred
 ```
 
 As soon you fired the command above (ensure that you place the right release name and namespace name!), the operator will start with the deployment. You can check this by discovering the pods in the namespace:
@@ -237,10 +237,235 @@ kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- more /san/test.tx
 kubectl exec -n sanecoapp $(kubectl get pod -n sanecoapp -o name) -- more /saneco/test.txt
 ```
 
-## :trident: Scenario 04 - Backup anyone? Installation of Trident protect
+## :trident: Scenario 04 - running out of space? Let's expand the volume
 **Remember: All required files are in the folder */root/tridenttraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
 ```console
 cd /root/tridenttraining2025/scenario04
+```
+
+Sometimes you need more space than you thought before. For sure you could create a new volume, copy the data and work with the new bigger PVC but it is way easier to just expand the existing.
+
+First let's check the StorageClasses
+
+```console
+kubectl get sc 
+```
+
+Look at the column *ALLOWVOLUMEEXPANSION*. As we specified earlier, both StorageClasses are set to *true*, which means PVCs that are created with this StorageClass can be expanded.  
+NFS Resizing was introduced in K8S 1.11, while iSCSI resizing was introduced in K8S 1.16 (CSI)
+
+Now let's create two PVCs and a busybox container using these PVCs, in their own namespace called *resize".
+
+```console
+kubectl apply -f resizeapp.yaml
+```
+
+Wait until the pod is in running state - you can check this with the command
+
+```console
+kubectl get pod -n resize
+```
+
+Finaly you should be able to see that the 5G volume is indeed mounted into the POD
+
+```console
+kubectl exec -n resize $(kubectl get pod -n resize -o name) -- df -h /nfsstorage
+kubectl exec -n resize $(kubectl get pod -n resize -o name) -- df -h /iscsistorage
+```
+
+Resizing a PVC can be done in different ways. We will edit the definition of the nfsstorage PVC & manually modify it.  
+Look for the *storage* parameter in the spec part of the definition & change the value (in this example, we will use 15GB)
+The provided command will open the pvc definition.
+
+```console
+kubectl -n resize edit pvc nfsstorage
+```
+
+change the size to 15Gi like in this example:
+
+```yaml
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 15Gi
+  storageClassName: sc-nas
+  volumeMode: Filesystem
+```
+
+you can insert something by pressing "i", exit the editor by pressing "ESC", type in :wq! to save&exit. 
+
+Everything happens dynamically without any interruption. The results can be observed with the following commands:
+
+```console
+kubectl -n resize get pvc
+kubectl exec -n resize $(kubectl get pod -n resize -o name) -- df -h /nfsstorage
+```
+
+This could also have been achieved by using the *kubectl patch* command. Try the following, this time for the blockstorage:
+
+```console
+kubectl patch -n resize pvc iscsistorage -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+```
+
+Note: This can take some seconds as not only the pvc needs to be resized but also the filesystem needs to be adjusted. 
+
+So increasing is easy, what about decreasing? Try to set your volume to a lower space, use the edit or the patch mechanism from above.
+___
+
+<details><summary>Click for the solution</summary>
+
+```console
+kubectl patch -n resize pvc nfsstorage -p '{"spec":{"resources":{"requests":{"storage":"2Gi"}}}}'
+```
+</details>
+
+___
+
+Even if it would be technically possible to decrease the size of a NFS volume, K8s just doesn't allow it. So keep in mind: Bigger ever, smaller never. 
+
+:trident::trident::trident:  
+Congratulations - You configured Trident and created your first applications that leveraged persistent storage. In addition, you also saw some of the typical errors and solved them. This marks the end of the first hands on part of this training.  
+:trident::trident::trident:
+
+## :trident: Scenario 05 - Snapshots here and there...
+**Remember: All required files are in the folder */root/tridentraining2025/scenario04* please ensure that you are in this folder now. You can do this with the command** 
+```console
+cd /root/tridentraining2025/scenario04
+```
+
+The following will walk you through the management of snapshots with a simple lightweight BusyBox container.
+
+You are going to work with the nasapp you created in Scenario02, Data has already been written there.
+
+Creating a snapshot of this volume is very simple. The necessary file is already prepared and in the scenario folder. Have a look at it and apply it afterwards.  
+
+```console
+kubectl apply -f pvc-snapshot.yaml
+```
+
+After it is created you can observe its details:
+```console
+kubectl get volumesnapshot -n nasapp
+```
+Your snapshot has been created !  
+
+To experiment with the snapshot, let's delete our test file...
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- rm -f /nas/test.txt
+```
+
+If you want to verify that the data is really gone, feel free to try out the command from above that has shown you the contents of the file:
+
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
+```
+
+One of the useful things K8s provides for snapshots is the ability to create a clone from it. 
+If you take a look a the PVC manifest (_pvc_from_snap.yaml_), you can notice the reference to the snapshot:
+
+```yaml
+dataSource:
+  name: pvcnas-snapshot
+  kind: VolumeSnapshot
+  apiGroup: snapshot.storage.k8s.io
+```
+
+Let's see how that turns out:
+
+```console
+kubectl apply -f pvc_from_snap.yaml
+```
+
+This will create a new pvc which could be used instantly in an application. You can see it if you take a look at the pvcs in your namespace:
+
+```console
+kubectl get pvc -n nasapp
+```
+
+Recover the data of your application
+
+When it comes to data recovery, there are many ways to do so. If you want to recover only a single file, you can temporarily attach a PVC clone based on the snapshot to your pod and copy individual files back. Some storage systems also provide a convenient access to snapshots by presenting them as part of the filesystem (feel free to exec into the pod and look for the .snapshot folders on your PVC). However, if you want to recover everything, you can just update your application manifest to point to the clone, which is what we are going to try now:
+
+```console
+kubectl patch -n nasapp deploy busybox -p '{"spec":{"template":{"spec":{"volumes":[{"name":"volnas","persistentVolumeClaim":{"claimName":"pvcnas-from-snap"}}]}}}}'
+```
+
+That will trigger a new POD creation with the updated configuration
+
+Now, if you look at the files this POD has access to (the PVC), you will see that the *lost data* (file: test.txt) is back!
+
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- ls -l /nas/
+```
+or even better, lets have a look at the contents:
+
+```console
+kubectl exec -n nasapp $(kubectl get pod -n nasapp -o name) -- more /nas/test.txt
+```
+
+Tadaaa, you have restored your data!  
+Keep in mind that some applications may need some extra care once the data is restored (databases for instance). In a production setup you'll likely need a more full-blown backup/restore solution.  
+
+Another Option is to use the in-place restore functionality of Trident.
+In-place restore will benefit from the ONTAP Snapshot Restore feature, which takes only a couple of seconds whatever size the volume is!  
+
+This time we will use the sanapp.
+
+Let's create the snapshot first again:
+
+```console
+kubectl apply -f pvc-snapshot-san.yaml
+```
+
+To experiment with the snapshot, let's delete our test file...
+```console
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- rm -f /san/test.txt
+```
+
+If you want to verify that the data is really gone, feel free to try out the command from above that has shown you the contents of the file:
+
+```console
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- more /san/test.txt
+```
+
+In order to use this feature, the volume needs to be detached from its pods.  
+Since we are using a deployment object, we can just scale it down to 0:  
+```console
+kubectl scale deploy busybox --replicas=0 -n sanapp
+```
+Verify that no pods are running anymore:
+```console
+kubectl get pod -n sanapp
+```
+
+In-place restore will be performed by created a TASR objet ("TridentActionSnapshotRestore"). The file is provided in the folder:
+```console
+kubectl apply -f snapshot-restore.yaml
+```
+To verify the status
+```console
+kubectl get -n sanapp tasr -o=jsonpath='{.items[0].status.state}'; echo
+```
+We can now restart the pod, and browse through the PVC content.  
+If you look at the files this POD has access to (the PVC), you will see that the *lost data* (file: test.txt) is back!
+```console
+kubectl scale -n sanapp deploy busybox --replicas=1
+```
+```console
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- ls -l /san/
+```
+```console
+kubectl exec -n sanapp $(kubectl get pod -n sanapp -o name) -- more /san/test.txt
+```
+Tadaaa, you have restored the whole snapshot in one shot!  
+
+
+## :trident: Scenario 06 - Backup anyone? Installation of Trident protect
+**Remember: All required files are in the folder */root/tridenttraining2025/scenario06* please ensure that you are in this folder now. You can do this with the command** 
+```console
+cd /root/tridenttraining2025/scenario06
 ```
 
 As K8s based applications become more and more important, people ask the mean questions around backup, dr and so on.
@@ -295,7 +520,7 @@ tridentctl-protect version
 25.06.0
 ```
 
-## :trident: Scenario 05 - Trident protect initial configuration
+## :trident: Scenario 07 - Trident protect initial configuration
 
 There are not many "administrative" tasks when it comes to Trident protect. It's installation (what we've done in Scenario04) and creating the AppVaults.
 
@@ -384,7 +609,7 @@ EOF
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --summarize
 aws s3 ls --no-verify-ssl --endpoint-url http://192.168.0.230 s3://s3lod --recursive --summarize
 ```
-## :trident: Scenario 06 - Protecting an application
+## :trident: Scenario 08 - Protecting an application
 
 Note: As mentioned above, Trident protect CRs can be configured as yaml manifests or via tridentctl-protect. I recommend to have a look at these two blog articles where the typical procedures are shown utilizing both ways.  
 [General Workflows, yaml manifests](https://community.netapp.com/t5/Tech-ONTAP-Blogs/Kubernetes-driven-data-management-The-new-era-with-Trident-protect/ba-p/456395)  
